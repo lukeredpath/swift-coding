@@ -16,7 +16,7 @@ public struct Encoding<Value> {
 // MARK: - Operators
 
 public extension Encoding {
-    /// Combines multiple encodings of the same type itnto a single encoding.
+    /// Combines multiple encodings of the same type into a single encoding.
     ///
     static func combine(_ encodings: Self...) -> Self {
         .init { value, encoder in
