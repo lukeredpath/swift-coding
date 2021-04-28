@@ -29,7 +29,7 @@ public extension Decoding {
     }
 }
 
-// MARK: - Encoder API
+// MARK: - Decoder API
 
 fileprivate struct DecodingProxy: Decodable {
     let decoder: Decoder
@@ -44,11 +44,11 @@ fileprivate struct DecodingProxy: Decodable {
 }
 
 public extension TopLevelDecoder {
-    /// Encodes a value `T` using the given encoding.
+    /// Decodes the input into a value `T` using the given decoding.
     ///
     /// - Parameters:
-    ///     - value: The value to be encoded.
-    ///     - encoding: The encoding used to encode the value.
+    ///     - input: The input to be decoded.
+    ///     - decoding: The decoding to use when decoding the input.
     ///
     func decode<T>(_ input: Input, as decoding: Decoding<T>) throws -> T {
         try decode(DecodingProxy.self, from: input).decode(using: decoding)
