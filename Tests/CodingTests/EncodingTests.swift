@@ -1,7 +1,6 @@
 import XCTest
 import Coding
 
-@available(iOS 13.0, *)
 final class EncodingTests: XCTestCase {
     let encoder = JSONEncoder()
 
