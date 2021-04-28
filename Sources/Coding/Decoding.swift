@@ -13,6 +13,14 @@ public struct Decoding<Value> {
     }
 }
 
+public extension Decoding {
+    func map<NewValue>(_ transform: @escaping (Value) -> NewValue) -> Decoding<NewValue> {
+        .init { newValue in
+            try transform(self.decode(newValue))
+        }
+    }
+}
+
 // MARK: - Encoder API
 
 fileprivate struct DecodingProxy: Decodable {

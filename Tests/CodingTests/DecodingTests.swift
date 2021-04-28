@@ -8,6 +8,26 @@ final class DecodingTests: XCTestCase {
         case value
     }
 
+    func testMap_WithClosure() {
+        XCTAssertEqual(
+            "test string",
+            try decoder.decode(
+                "\"TEST STRING\"".data(using: .utf8)!,
+                as: .singleValue.map { $0.lowercased() }
+            )
+        )
+    }
+
+    func testMap_WithKeypath() {
+        XCTAssertEqual(
+            5,
+            try decoder.decode(
+                "\"abcde\"".data(using: .utf8)!,
+                as: Decoding<String>.singleValue.map(\.count)
+            )
+        )
+    }
+
     // MARK: - Built-in decodings
 
     func testDecoding_UInt16() throws {
