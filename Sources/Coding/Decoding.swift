@@ -21,6 +21,12 @@ public extension Decoding {
             try transform(self.decode(newValue))
         }
     }
+
+    func replaceNil<T>(with defaultValue: T) -> Decoding<T> where Value == T? {
+        .init { decoder in
+            try self.decode(decoder) ?? defaultValue
+        }
+    }
 }
 
 // MARK: - Encoder API

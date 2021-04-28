@@ -60,9 +60,9 @@ public extension Encoding {
     /// - Parameters:
     ///     - defaultValue: The value to encode when the input value is nil.
     ///
-    func defaulting(to defaultValue: Value) -> Encoding<Value?> {
+    func replaceNil(with replacementValue: Value) -> Encoding<Value?> {
         .init { value, encoder in
-            try self.encode(value ?? defaultValue, encoder)
+            try self.encode(value ?? replacementValue, encoder)
         }
     }
 }

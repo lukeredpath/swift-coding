@@ -8,6 +8,18 @@ final class DecodingTests: XCTestCase {
         case value
     }
 
+    struct User {
+        var name: String
+        var age: Int
+        var city: String?
+
+        enum CodingKeys: CodingKey {
+            case name
+            case age
+            case city
+        }
+    }
+
     func testMap_WithClosure() {
         XCTAssertEqual(
             "test string",
@@ -29,18 +41,6 @@ final class DecodingTests: XCTestCase {
     }
 
     func testCombiningDecoders_ZipWith() throws {
-        struct User {
-            var name: String
-            var age: Int
-            var city: String?
-
-            enum CodingKeys: CodingKey {
-                case name
-                case age
-                case city
-            }
-        }
-
         let json = """
         {
             "name": "Joe Bloggs",
@@ -66,6 +66,34 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual("Joe Bloggs", user.name)
         XCTAssertEqual(18, user.age)
         XCTAssertEqual("London", user.city)
+    }
+
+    func testReplaceMissingValuesWithDefault() throws {
+        let json = """
+        {
+            "name": "Joe Bloggs",
+            "age": 18
+        }
+        """
+
+        let name = Decoding<String>
+            .withKey(User.CodingKeys.name)
+
+        let age = Decoding<Int>
+            .withKey(User.CodingKeys.age)
+
+        let city = Decoding<String>
+            .optionalWithKey(User.CodingKeys.city)
+            .replaceNil(with: "Unknown")
+
+        let user = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: zip(with: User.init)(name, age, city)
+        )
+
+        XCTAssertEqual("Joe Bloggs", user.name)
+        XCTAssertEqual(18, user.age)
+        XCTAssertEqual("Unknown", user.city)
     }
 
     // MARK: - Built-in decodings

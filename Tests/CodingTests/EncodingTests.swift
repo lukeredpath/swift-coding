@@ -99,7 +99,7 @@ final class EncodingTests: XCTestCase {
 
                         Encoding<Int>
                             .withKey(Value.CodingKeys.b)
-                            .defaulting(to: 0)
+                            .replaceNil(with: 0)
                             .pullback(\.b)
                     )
                 )
