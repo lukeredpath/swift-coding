@@ -341,3 +341,21 @@ public extension Decoding where Value: Decodable {
     }
 }
 
+// MARK: - Zip
+
+public func zip<A, B>(
+    _ a: Decoding<A>,
+    _ b: Decoding<B>
+) -> Decoding<(A, B)> {
+    .init { decoder in
+        try (a.decode(decoder), b.decode(decoder))
+    }
+}
+
+public func zip<A, B, Output>(
+    with f: @escaping (A, B) -> Output) -> (
+    Decoding<A>,
+    Decoding<B>
+) -> Decoding<Output> {
+    { zip($0, $1).map(f) }
+}
