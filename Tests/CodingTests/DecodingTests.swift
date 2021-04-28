@@ -28,6 +28,46 @@ final class DecodingTests: XCTestCase {
         )
     }
 
+    func testCombiningDecoders_ZipWith() throws {
+        struct User {
+            var name: String
+            var age: Int
+            var city: String?
+
+            enum CodingKeys: CodingKey {
+                case name
+                case age
+                case city
+            }
+        }
+
+        let json = """
+        {
+            "name": "Joe Bloggs",
+            "age": 18,
+            "city": "London"
+        }
+        """
+
+        let name = Decoding<String>
+            .withKey(User.CodingKeys.name)
+
+        let age = Decoding<Int>
+            .withKey(User.CodingKeys.age)
+
+        let city = Decoding<String>
+            .optionalWithKey(User.CodingKeys.city)
+
+        let user = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: zip(with: User.init)(name, age, city)
+        )
+
+        XCTAssertEqual("Joe Bloggs", user.name)
+        XCTAssertEqual(18, user.age)
+        XCTAssertEqual("London", user.city)
+    }
+
     // MARK: - Built-in decodings
 
     func testDecoding_UInt16() throws {

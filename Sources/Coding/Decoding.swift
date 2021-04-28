@@ -13,6 +13,8 @@ public struct Decoding<Value> {
     }
 }
 
+// MARK: - Operators
+
 public extension Decoding {
     func map<NewValue>(_ transform: @escaping (Value) -> NewValue) -> Decoding<NewValue> {
         .init { newValue in
@@ -30,7 +32,7 @@ fileprivate struct DecodingProxy: Decodable {
         self.decoder = decoder
     }
 
-    func decode<Output: Decodable>(using decoding: Decoding<Output>) throws -> Output {
+    func decode<Output>(using decoding: Decoding<Output>) throws -> Output {
         try decoding.decode(decoder)
     }
 }
@@ -42,7 +44,7 @@ public extension TopLevelDecoder {
     ///     - value: The value to be encoded.
     ///     - encoding: The encoding used to encode the value.
     ///
-    func decode<T: Decodable>(_ input: Input, as decoding: Decoding<T>) throws -> T {
+    func decode<T>(_ input: Input, as decoding: Decoding<T>) throws -> T {
         try decode(DecodingProxy.self, from: input).decode(using: decoding)
     }
 }
@@ -311,17 +313,17 @@ public extension Decoding where Value: Decodable {
         }
     }
 
-    static var optionalUnkeyed: Decoding<Value?> {
-        .init { decoder in
-            var container = try decoder.unkeyedContainer()
-            return try container.decodeIfPresent(Value.self)
-        }
-    }
-
     static func withKey<Key: CodingKey>(_ key: Key) -> Self {
         .init { decoder in
             let container = try decoder.container(keyedBy: Key.self)
             return try container.decode(Value.self, forKey: key)
+        }
+    }
+
+    static var optionalUnkeyed: Decoding<Value?> {
+        .init { decoder in
+            var container = try decoder.unkeyedContainer()
+            return try container.decodeIfPresent(Value.self)
         }
     }
 
