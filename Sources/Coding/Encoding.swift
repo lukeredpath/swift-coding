@@ -101,7 +101,7 @@ public extension Encoding where Value: Encodable {
     }
 
     static var unkeyed: Self {
-        Self { value, encoder in
+        .init { value, encoder in
             var container = encoder.unkeyedContainer()
             try container.encode(value)
         }
@@ -111,6 +111,17 @@ public extension Encoding where Value: Encodable {
         .init { value, encoder in
             var container = encoder.container(keyedBy: Key.self)
             try container.encode(value, forKey: key)
+        }
+    }
+}
+
+public extension Encoding where Value: Sequence, Value.Element: Encodable {
+    static func arrayOf(_ encoding: Encoding<Value.Element>) -> Self {
+        .init { value, encoder in
+            var container = encoder.unkeyedContainer()
+            for element in value {
+                try encoding.encode(element, container.superEncoder())
+            }
         }
     }
 }

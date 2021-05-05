@@ -363,6 +363,24 @@ final class EncodingTests: XCTestCase {
         )
     }
 
+    //  MARK: - Collection Encoding
+
+    func testEncodeArrayWithCustomEncodingForEachValue() {
+        let strings = ["One", "Two", "Three"]
+
+        XCTAssertEqual(
+            "[\"One\",\"Two\",\"Three\"]",
+            stringValue(try encoder.encode(strings, as: .singleValue))
+        )
+
+        let uppercased: Encoding<String> = .singleValue.pullback { $0.uppercased() }
+
+        XCTAssertEqual(
+            "[\"ONE\",\"TWO\",\"THREE\"]",
+            stringValue(try encoder.encode(strings, as: .arrayOf(uppercased)))
+        )
+    }
+
     private func stringValue(_ data: Data) -> String {
         String(data: data, encoding: .utf8)!
     }
