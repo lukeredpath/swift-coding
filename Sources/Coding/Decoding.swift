@@ -23,9 +23,7 @@ public extension Decoding {
     }
 
     func replaceNil<T>(with defaultValue: T) -> Decoding<T> where Value == T? {
-        .init { decoder in
-            try self.decode(decoder) ?? defaultValue
-        }
+        map { $0 ?? defaultValue }
     }
 }
 
