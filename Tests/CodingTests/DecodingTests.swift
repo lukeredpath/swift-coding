@@ -8,7 +8,7 @@ final class DecodingTests: XCTestCase {
         case value
     }
 
-    struct User {
+    struct User: Equatable {
         var name: String
         var age: Int
         var city: String?
@@ -94,6 +94,72 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual("Joe Bloggs", user.name)
         XCTAssertEqual(18, user.age)
         XCTAssertEqual("Unknown", user.city)
+    }
+
+    // MARK: - Decoding collections
+
+    func testDecodingArrayOfSimpleValues() throws {
+        let json = """
+        [
+            "one",
+            "two",
+            "three"
+        ]
+        """
+
+        let strings = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: Decoding<String>.array
+        )
+
+        XCTAssertEqual(["one", "two", "three"], strings)
+
+        let uppercased = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: Decoding<String>.arrayOf(.singleValue.map { $0.uppercased() })
+        )
+
+        XCTAssertEqual(["ONE", "TWO", "THREE"], uppercased)
+    }
+
+    func testDecodingArrayOfComplexValues() throws {
+        let json = """
+        [
+          {
+              "name": "Joe Bloggs",
+              "age": 18
+          },
+          {
+              "name": "Jane Doe",
+              "age": 21,
+              "city": "London"
+          }
+        ]
+        """
+
+        let name = Decoding<String>
+            .withKey(User.CodingKeys.name)
+
+        let age = Decoding<Int>
+            .withKey(User.CodingKeys.age)
+
+        let city = Decoding<String>
+            .optionalWithKey(User.CodingKeys.city)
+
+        let user = zip(with: User.init)(name, age, city)
+
+        let users = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: Decoding<User>.arrayOf(user)
+        )
+
+        XCTAssertEqual(
+            users,
+            [
+                User(name: "Joe Bloggs", age: 18, city: nil),
+                User(name: "Jane Doe", age: 21, city: "London")
+            ]
+        )
     }
 
     // MARK: - Built-in decodings

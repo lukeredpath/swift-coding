@@ -90,6 +90,25 @@ public extension Decoding where Value: Decodable {
             return try container.decodeIfPresent(Value.self, forKey: key)
         }
     }
+
+    static var array: Decoding<[Value]> {
+        Decoding<Value>.arrayOf(.singleValue)
+    }
+}
+
+// MARK: - Collections
+
+public extension Decoding {
+    static func arrayOf(_ decoding: Self) -> Decoding<[Value]> {
+        .init { decoder in
+            var container = try decoder.unkeyedContainer()
+            var result: [Value] = []
+            while !container.isAtEnd {
+                try result.append(decoding.decode(container.superDecoder()))
+            }
+            return result
+        }
+    }
 }
 
 // MARK: - Zip
