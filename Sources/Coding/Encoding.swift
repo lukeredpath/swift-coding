@@ -20,6 +20,16 @@ public extension Encoding {
     ///
     static func combine(_ encodings: Self...) -> Self {
         .init { value, encoder in
+            var container = encoder.unkeyedContainer()
+            for encoding in encodings {
+                try encoding.encode(value, container.superEncoder())
+            }
+        }
+    }
+
+    static func combineWithKeys<Key: CodingKey>(_ keyType: Key.Type, _ encodings: Self...) -> Self {
+        .init { value, encoder in
+            _ = encoder.container(keyedBy: keyType)
             for encoding in encodings {
                 try encoding.encode(value, encoder)
             }
@@ -63,6 +73,14 @@ public extension Encoding {
     func replaceNil(with replacementValue: Value) -> Encoding<Value?> {
         .init { value, encoder in
             try self.encode(value ?? replacementValue, encoder)
+        }
+    }
+
+    /// Turns an encoding of a value into one that encodes that value nested inside a keyed container with the given key.
+    func withKey<Key: CodingKey>(_ key: Key) -> Self {
+        .init { value, encoder in
+            var container = encoder.container(keyedBy: Key.self)
+            try self.encode(value, container.superEncoder(forKey: key))
         }
     }
 }
@@ -115,7 +133,7 @@ public extension Encoding where Value: Encodable {
     }
 }
 
-public extension Encoding where Value: Sequence, Value.Element: Encodable {
+public extension Encoding where Value: Sequence {
     static func arrayOf(_ encoding: Encoding<Value.Element>) -> Self {
         .init { value, encoder in
             var container = encoder.unkeyedContainer()

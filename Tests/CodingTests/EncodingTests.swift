@@ -61,7 +61,9 @@ final class EncodingTests: XCTestCase {
             stringValue(
                 try encoder.encode(
                     Value(a: 123, b: nil),
-                    as: .combine(
+                    as: .combineWithKeys(
+                        Value.CodingKeys.self,
+
                         Encoding<Int>
                             .withKey(Value.CodingKeys.a)
                             .pullback(\.a),
@@ -92,7 +94,9 @@ final class EncodingTests: XCTestCase {
             stringValue(
                 try encoder.encode(
                     Value(a: 123, b: nil),
-                    as: .combine(
+                    as: .combineWithKeys(
+                        Value.CodingKeys.self,
+
                         Encoding<Int>
                             .withKey(Value.CodingKeys.a)
                             .pullback(\.a),
@@ -381,7 +385,246 @@ final class EncodingTests: XCTestCase {
         )
     }
 
+    // MARK: - Complex Encoding
+
+    func testNestedEncoding() {
+        encoder.outputFormatting = .prettyPrinted
+
+        let car = Car(
+            name: "McLaren F1",
+            model: .init(name: "F1"),
+            manufacturer: .init(name: "McLaren"),
+            availableColors: ["red", "silver"]
+        )
+
+        XCTAssertEqual(
+            """
+            {
+              "manufacturer" : {
+                "name" : "McLaren"
+              },
+              "model" : {
+                "name" : "F1",
+                "engineSizes" : [
+                  5000,
+                  6000,
+                  7000
+                ]
+              },
+              "availableColors" : [
+                "RED",
+                "SILVER"
+              ],
+              "name" : "McLaren F1"
+            }
+            """,
+            stringValue(try encoder.encode(car, as: .default))
+        )
+    }
+
+    func testCollectionOfComplexTypes() {
+        encoder.outputFormatting = .prettyPrinted
+
+        let carOne = Car(
+            name: "McLaren F1",
+            model: .init(name: "F1"),
+            manufacturer: .init(name: "McLaren"),
+            availableColors: ["red", "silver"]
+        )
+
+        let carTwo = Car(
+            name: "Porsche 911",
+            model: .init(name: "911"),
+            manufacturer: .init(name: "Porsche"),
+            availableColors: ["red", "yellow"]
+        )
+
+        XCTAssertEqual(
+            """
+            [
+              {
+                "manufacturer" : {
+                  "name" : "McLaren"
+                },
+                "model" : {
+                  "name" : "F1",
+                  "engineSizes" : [
+                    5000,
+                    6000,
+                    7000
+                  ]
+                },
+                "availableColors" : [
+                  "RED",
+                  "SILVER"
+                ],
+                "name" : "McLaren F1"
+              },
+              {
+                "manufacturer" : {
+                  "name" : "Porsche"
+                },
+                "model" : {
+                  "name" : "911",
+                  "engineSizes" : [
+                    5000,
+                    6000,
+                    7000
+                  ]
+                },
+                "availableColors" : [
+                  "RED",
+                  "YELLOW"
+                ],
+                "name" : "Porsche 911"
+              }
+            ]
+            """,
+            stringValue(try encoder.encode([carOne, carTwo], as: .arrayOf(.default)))
+        )
+    }
+
+    func testUnkeyedEncodingOfValueAttributes() {
+        struct Value {
+            var a: Int
+            var b: String
+            var c: Bool
+        }
+
+        let value = Value(a: 1, b: "A", c: true)
+
+        let encoding: Encoding<Value> = .combine(
+            Encoding<Int>.singleValue.pullback(\.a),
+            Encoding<String>.singleValue.pullback(\.b),
+            Encoding<Bool>.singleValue.pullback(\.c)
+        )
+
+        XCTAssertEqual(
+            """
+            [1,"A",true]
+            """,
+            stringValue(try encoder.encode(value, as: encoding))
+        )
+    }
+
+    func testEncodingOfValueAttributesAsArrayOfIndividualObjects() {
+        struct Value {
+            var a: Int
+            var b: String
+            var c: Bool
+        }
+
+        enum ValueKeys: CodingKey {
+            case a, b, c
+        }
+
+        let value = Value(a: 1, b: "A", c: true)
+
+        let encoding: Encoding<Value> = .combine(
+            Encoding<Int>.withKey(ValueKeys.a).pullback(\.a),
+            Encoding<String>.withKey(ValueKeys.b).pullback(\.b),
+            Encoding<Bool>.withKey(ValueKeys.c).pullback(\.c)
+        )
+
+        XCTAssertEqual(
+            """
+            [{"a":1},{"b":"A"},{"c":true}]
+            """,
+            stringValue(try encoder.encode(value, as: encoding))
+        )
+    }
+
     private func stringValue(_ data: Data) -> String {
         String(data: data, encoding: .utf8)!
     }
+}
+
+// MARK: - Test encodings
+
+struct Car {
+    var name: String
+    var model: Model
+    var manufacturer: Manufacturer
+    var availableColors: [String]
+
+    enum CodingKeys: CodingKey {
+        case name
+        case model
+        case manufacturer
+        case availableColors
+    }
+}
+
+struct Model {
+    var name: String
+    var engineSizes = [5000, 6000, 7000]
+
+    enum CodingKeys: CodingKey {
+        case name
+        case engineSizes
+    }
+}
+
+struct Manufacturer {
+    var name: String
+
+    enum CodingKeys: CodingKey {
+        case name
+    }
+}
+
+extension Encoding where Value == Manufacturer {
+    static let name: Self = Encoding<String>
+        .withKey(Model.CodingKeys.name)
+        .pullback(\.name)
+
+    static let `default`: Self = .combineWithKeys(
+        Manufacturer.CodingKeys.self,
+        name
+    )
+}
+
+extension Encoding where Value == Model {
+    static let name: Self = Encoding<String>
+        .withKey(Model.CodingKeys.name)
+        .pullback(\.name)
+
+    static let engineSizes: Self = Encoding<[Int]>
+        .withKey(Model.CodingKeys.engineSizes)
+        .pullback(\.engineSizes)
+
+    static let `default`: Self = .combineWithKeys(
+        Model.CodingKeys.self,
+        name,
+        engineSizes
+    )
+}
+
+extension Encoding where Value == Car {
+    static let name: Self = Encoding<String>
+        .withKey(Car.CodingKeys.name)
+        .pullback(\.name)
+
+    static let model: Self = Encoding<Model>
+        .default
+        .withKey(Car.CodingKeys.model)
+        .pullback(\.model)
+
+    static let manufacturer: Self = Encoding<Manufacturer>
+        .default
+        .withKey(Car.CodingKeys.manufacturer)
+        .pullback(\.manufacturer)
+
+    static let colors: Self = Encoding<[String]>
+        .arrayOf(.singleValue.pullback { $0.uppercased() })
+        .withKey(Car.CodingKeys.availableColors)
+        .pullback(\.availableColors)
+
+    static let `default`: Self = .combineWithKeys(
+        Car.CodingKeys.self,
+        name,
+        model,
+        manufacturer,
+        colors
+    )
 }
