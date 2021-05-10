@@ -159,3 +159,20 @@ public extension Encoding {
         }
     }
 }
+
+// MARK: - Property Wrapper
+
+@propertyWrapper
+public struct UsesEncoding<Value>: Encodable {
+    public let wrappedValue: Value
+    public let encoding: Encoding<Value>
+
+    public init(wrappedValue: Value, _ encoding: Encoding<Value>) {
+        self.wrappedValue = wrappedValue
+        self.encoding = encoding
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        try encoding.encode(wrappedValue, encoder)
+    }
+}

@@ -534,6 +534,35 @@ final class EncodingTests: XCTestCase {
         )
     }
 
+    // MARK: - Encoding Property Wrapper
+
+    func testEncodingPropertyWrapper() {
+        struct User: Encodable {
+            @UsesEncoding(.lowercased)
+            var id: UUID = UUID()
+
+            @UsesEncoding(.lowercased)
+            var name: String = ""
+        }
+
+        encoder.outputFormatting = .prettyPrinted
+
+        let user = User(
+            id: UUID(uuidString: "3B0B3AFC-4C61-4251-8FC5-F046D06DC3EC")!,
+            name: "Joe Bloggs"
+        )
+
+        XCTAssertEqual(
+            """
+            {
+              "id" : "3b0b3afc-4c61-4251-8fc5-f046d06dc3ec",
+              "name" : "joe bloggs"
+            }
+            """,
+            stringValue(try encoder.encode(user))
+        )
+    }
+
     private func stringValue(_ data: Data) -> String {
         String(data: data, encoding: .utf8)!
     }
@@ -571,6 +600,18 @@ struct Manufacturer {
     enum CodingKeys: CodingKey {
         case name
     }
+}
+
+extension Encoding where Value == String {
+    static let lowercased: Self = Encoding<String>
+        .singleValue
+        .pullback { $0.lowercased() }
+}
+
+extension Encoding where Value == UUID {
+    static let lowercased: Self = Encoding<String>
+        .lowercased
+        .pullback { $0.uuidString }
 }
 
 extension Encoding where Value == Manufacturer {
