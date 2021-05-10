@@ -543,20 +543,28 @@ final class EncodingTests: XCTestCase {
 
             @UsesEncoding(.lowercased)
             var name: String = ""
+
+            @UsesEncoding(.arrayOf(.lowercased))
+            var hobbies: [String] = []
         }
 
         encoder.outputFormatting = .prettyPrinted
 
         let user = User(
             id: UUID(uuidString: "3B0B3AFC-4C61-4251-8FC5-F046D06DC3EC")!,
-            name: "Joe Bloggs"
+            name: "Joe Bloggs",
+            hobbies: ["Poker", "Cycling"]
         )
 
         XCTAssertEqual(
             """
             {
               "id" : "3b0b3afc-4c61-4251-8fc5-f046d06dc3ec",
-              "name" : "joe bloggs"
+              "name" : "joe bloggs",
+              "hobbies" : [
+                "poker",
+                "cycling"
+              ]
             }
             """,
             stringValue(try encoder.encode(user))
