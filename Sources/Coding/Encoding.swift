@@ -20,16 +20,6 @@ public extension Encoding {
     ///
     static func combine(_ encodings: Self...) -> Self {
         .init { value, encoder in
-            var container = encoder.unkeyedContainer()
-            for encoding in encodings {
-                try encoding.encode(value, container.superEncoder())
-            }
-        }
-    }
-
-    static func combineWithKeys<Key: CodingKey>(_ keyType: Key.Type, _ encodings: Self...) -> Self {
-        .init { value, encoder in
-            _ = encoder.container(keyedBy: keyType)
             for encoding in encodings {
                 try encoding.encode(value, encoder)
             }

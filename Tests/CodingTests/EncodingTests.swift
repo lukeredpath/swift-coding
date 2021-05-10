@@ -61,9 +61,7 @@ final class EncodingTests: XCTestCase {
             stringValue(
                 try encoder.encode(
                     Value(a: 123, b: nil),
-                    as: .combineWithKeys(
-                        Value.CodingKeys.self,
-
+                    as: .combine(
                         Encoding<Int>
                             .withKey(Value.CodingKeys.a)
                             .pullback(\.a),
@@ -94,9 +92,7 @@ final class EncodingTests: XCTestCase {
             stringValue(
                 try encoder.encode(
                     Value(a: 123, b: nil),
-                    as: .combineWithKeys(
-                        Value.CodingKeys.self,
-
+                    as: .combine(
                         Encoding<Int>
                             .withKey(Value.CodingKeys.a)
                             .pullback(\.a),
@@ -484,56 +480,6 @@ final class EncodingTests: XCTestCase {
         )
     }
 
-    func testUnkeyedEncodingOfValueAttributes() {
-        struct Value {
-            var a: Int
-            var b: String
-            var c: Bool
-        }
-
-        let value = Value(a: 1, b: "A", c: true)
-
-        let encoding: Encoding<Value> = .combine(
-            Encoding<Int>.singleValue.pullback(\.a),
-            Encoding<String>.singleValue.pullback(\.b),
-            Encoding<Bool>.singleValue.pullback(\.c)
-        )
-
-        XCTAssertEqual(
-            """
-            [1,"A",true]
-            """,
-            stringValue(try encoder.encode(value, as: encoding))
-        )
-    }
-
-    func testEncodingOfValueAttributesAsArrayOfIndividualObjects() {
-        struct Value {
-            var a: Int
-            var b: String
-            var c: Bool
-        }
-
-        enum ValueKeys: CodingKey {
-            case a, b, c
-        }
-
-        let value = Value(a: 1, b: "A", c: true)
-
-        let encoding: Encoding<Value> = .combine(
-            Encoding<Int>.withKey(ValueKeys.a).pullback(\.a),
-            Encoding<String>.withKey(ValueKeys.b).pullback(\.b),
-            Encoding<Bool>.withKey(ValueKeys.c).pullback(\.c)
-        )
-
-        XCTAssertEqual(
-            """
-            [{"a":1},{"b":"A"},{"c":true}]
-            """,
-            stringValue(try encoder.encode(value, as: encoding))
-        )
-    }
-
     // MARK: - Encoding Property Wrapper
 
     func testEncodingPropertyWrapper() {
@@ -627,8 +573,8 @@ extension Encoding where Value == Manufacturer {
         .withKey(Model.CodingKeys.name)
         .pullback(\.name)
 
-    static let `default`: Self = .combineWithKeys(
-        Manufacturer.CodingKeys.self,
+    static let `default`: Self = .combine(
+        
         name
     )
 }
@@ -642,8 +588,8 @@ extension Encoding where Value == Model {
         .withKey(Model.CodingKeys.engineSizes)
         .pullback(\.engineSizes)
 
-    static let `default`: Self = .combineWithKeys(
-        Model.CodingKeys.self,
+    static let `default`: Self = .combine(
+//        Model.CodingKeys.self,
         name,
         engineSizes
     )
@@ -669,8 +615,8 @@ extension Encoding where Value == Car {
         .withKey(Car.CodingKeys.availableColors)
         .pullback(\.availableColors)
 
-    static let `default`: Self = .combineWithKeys(
-        Car.CodingKeys.self,
+    static let `default`: Self = .combine(
+//        Car.CodingKeys.self,
         name,
         model,
         manufacturer,
