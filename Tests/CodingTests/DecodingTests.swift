@@ -161,6 +161,53 @@ final class DecodingTests: XCTestCase {
             ]
         )
     }
+    
+    func testDecodingNestedDecodings() throws {
+        struct Parent {
+            let name: String
+            let children: [Child]
+            enum CodingKeys: String, CodingKey {
+                case name
+                case children
+            }
+        }
+        
+        struct Child {
+            let name: String
+            enum CodingKeys: String, CodingKey {
+                case name
+            }
+        }
+        
+        let childDecoding = Decoding<String>.withKey(Child.CodingKeys.name)
+                .map(Child.init)
+        
+        let parentDecoding = zip(with: Parent.init)(
+            Decoding<String>.withKey(Parent.CodingKeys.name),
+            Decoding<Child>.arrayOf(childDecoding).withKey(Parent.CodingKeys.children)
+            )
+        
+        let json = """
+            {
+              "name" : "Anakin",
+              "children" : [
+                {
+                  "name" : "Luke"
+                },
+                {
+                  "name" : "Leia"
+                }
+              ]
+            }
+            """
+        
+        let parent = try decoder.decode(json.data(using: .utf8)!, as: parentDecoding)
+        XCTAssertEqual(parent.name, "Anakin")
+        XCTAssertEqual(parent.children.count, 2)
+        
+        XCTAssertTrue(parent.children.contains(where: { $0.name == "Luke" }))
+        XCTAssertTrue(parent.children.contains(where: { $0.name == "Leia" }))
+    }
 
     // MARK: - Built-in decodings
 
