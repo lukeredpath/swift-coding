@@ -208,6 +208,44 @@ final class DecodingTests: XCTestCase {
         XCTAssertTrue(parent.children.contains(where: { $0.name == "Luke" }))
         XCTAssertTrue(parent.children.contains(where: { $0.name == "Leia" }))
     }
+    
+    func testDecodingNestedDecodingOptionalWithKey() throws {
+        struct Parent {
+            let name: String
+            let children: [Child]?
+            enum CodingKeys: String, CodingKey {
+                case name
+                case children
+            }
+        }
+        
+        struct Child {
+            let name: String
+            enum CodingKeys: String, CodingKey {
+                case name
+            }
+        }
+        
+        let childDecoding = Decoding<String>.withKey(Child.CodingKeys.name)
+                .map(Child.init)
+        
+        let parentDecoding = zip(with: Parent.init)(
+            Decoding<String>.withKey(Parent.CodingKeys.name),
+            Decoding<Child>
+                .arrayOf(childDecoding)
+                .optionalWithKey(Parent.CodingKeys.children)
+            )
+        
+        let json = """
+            {
+              "name" : "Yoda"
+            }
+            """
+        
+        let parent = try decoder.decode(json.data(using: .utf8)!, as: parentDecoding)
+        XCTAssertEqual(parent.name, "Yoda")
+        XCTAssertNil(parent.children)
+    }
 
     // MARK: - Built-in decodings
 

@@ -103,6 +103,14 @@ public extension Decoding {
             return try self.decode(container.superDecoder(forKey: key))
         }
     }
+    
+    func optionalWithKey<Key: CodingKey>(_ key: Key) -> Decoding<Value?> {
+        .init { decoder in
+            let container = try decoder.container(keyedBy: Key.self)
+            guard container.contains(key) else { return nil }
+            return try self.decode(container.superDecoder(forKey: key))
+        }
+    }
 }
 
 // MARK: - Collections
