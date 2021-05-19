@@ -417,6 +417,60 @@ final class EncodingTests: XCTestCase {
             stringValue(try encoder.encode(car, as: .default))
         )
     }
+    
+    func testNestedCollectionOfEncoding() throws {
+        struct Parent {
+            let name: String
+            let children: [Child]
+            enum CodingKeys: String, CodingKey {
+                case name
+                case children
+            }
+        }
+        
+        struct Child {
+            let name: String
+            enum CodingKeys: String, CodingKey {
+                case name
+            }
+        }
+        
+        let childEncoding: Encoding<Child> =
+            Encoding<String>.withKey(Child.CodingKeys.name)
+                .pullback(\.name)
+        
+        let parentEncoding = Encoding<Parent>.combine(
+            Encoding<String>
+                .withKey(Parent.CodingKeys.name)
+                .pullback(\.name),
+            
+            Encoding<[Child]>.arrayOf(childEncoding)
+                .withKey(Parent.CodingKeys.children)
+                .pullback(\.children)
+        )
+        
+        encoder.outputFormatting = .prettyPrinted
+        
+        let parent = Parent(name: "Anakin", children: [
+            .init(name: "Luke"),
+            .init(name: "Leia"),
+        ])
+        let out = stringValue(try encoder.encode(parent, as: parentEncoding))
+
+        XCTAssertEqual("""
+            {
+              "name" : "Anakin",
+              "children" : [
+                {
+                  "name" : "Luke"
+                },
+                {
+                  "name" : "Leia"
+                }
+              ]
+            }
+            """, out)
+    }
 
     func testCollectionOfComplexTypes() {
         encoder.outputFormatting = .prettyPrinted
