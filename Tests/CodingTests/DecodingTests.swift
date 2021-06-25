@@ -20,6 +20,16 @@ final class DecodingTests: XCTestCase {
         }
     }
 
+    struct Account: Equatable {
+        var id: UUID
+        var user: User?
+
+        enum CodingKeys: CodingKey {
+            case id
+            case user
+        }
+    }
+
     func testMap_WithClosure() {
         XCTAssertEqual(
             "test string",
@@ -94,6 +104,92 @@ final class DecodingTests: XCTestCase {
         XCTAssertEqual("Joe Bloggs", user.name)
         XCTAssertEqual(18, user.age)
         XCTAssertEqual("Unknown", user.city)
+    }
+
+    func testDecodingParentChildDecodings() throws {
+        let json = """
+        {
+            "id": "00000000-0000-0000-0000-000000000001",
+            "user": {
+                "name": "Joe Bloggs",
+                "age": 18,
+                "city": "London"
+            }
+        }
+        """
+
+        let userDecoding = zip(with: User.init)(
+            Decoding<String>
+                .withKey(User.CodingKeys.name),
+
+            Decoding<Int>
+                .withKey(User.CodingKeys.age),
+
+            Decoding<String>
+                .optionalWithKey(User.CodingKeys.city)
+        )
+
+        let accountDecoding = zip(with: Account.init)(
+            Decoding<UUID>
+                .withKey(Account.CodingKeys.id),
+
+            userDecoding
+                .withKey(Account.CodingKeys.user)
+        )
+
+        let account = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: accountDecoding
+        )
+
+        XCTAssertEqual(
+            UUID(uuidString: "00000000-0000-0000-0000-000000000001"),
+            account.id
+        )
+
+        XCTAssertEqual(
+            User(name: "Joe Bloggs", age: 18, city: "London"),
+            account.user
+        )
+    }
+
+    func testDecodingParentChildDecodings_MissingOptionalChildValue() throws {
+        let json = """
+        {
+            "id": "00000000-0000-0000-0000-000000000001"
+        }
+        """
+
+        let userDecoding = zip(with: User.init)(
+            Decoding<String>
+                .withKey(User.CodingKeys.name),
+
+            Decoding<Int>
+                .withKey(User.CodingKeys.age),
+
+            Decoding<String>
+                .optionalWithKey(User.CodingKeys.city)
+        )
+
+        let accountDecoding = zip(with: Account.init)(
+            Decoding<UUID>
+                .withKey(Account.CodingKeys.id),
+
+            userDecoding
+                .optionalWithKey(Account.CodingKeys.user)
+        )
+
+        let account = try decoder.decode(
+            json.data(using: .utf8)!,
+            as: accountDecoding
+        )
+
+        XCTAssertEqual(
+            UUID(uuidString: "00000000-0000-0000-0000-000000000001"),
+            account.id
+        )
+
+        XCTAssertNil(account.user)
     }
 
     // MARK: - Decoding collections
